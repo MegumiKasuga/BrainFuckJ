@@ -53,7 +53,7 @@ input_mode = "CHAR"
 mem_size = 256
 ```
 
-#### 例子
+#### 范例
 ```shell
 java -jar BrainFuckJ-version.jar path=path/of/your/script  
 # 如果'path'参数未指定，bfj会以命令行模式启动。
@@ -118,7 +118,7 @@ bfj中的数据是0~255的无符号整数。输入/输出时自动转换为对�
 <br> ~> 0 - 1 = mem.length - 1
 <br> ~> (mem.length - 1) + 1 = 0
 
-## Example
+## 范例
 这是一个使用bfj实现函数调用，将两个值加起来并输出的程序：
 ```BrainFuck
 +*  # 跳转到代码标记 1
