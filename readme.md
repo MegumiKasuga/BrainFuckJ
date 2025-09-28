@@ -38,7 +38,7 @@ path=path/of/your/script
 # bfj would go into command mode if there's no 'path' argument
 ```
 
-#### example
+#### Example
 ```shell
 java -jar BrainFuckJ-version.jar path=path/of/your/script input_mode=NUMBER mem=128
 ```
@@ -54,7 +54,7 @@ input_mode = "CHAR"
 mem_size = 256
 ```
 
-#### example
+#### Example
 ```shell
 java -jar BrainFuckJ-version.jar path=path/of/your/script  
 # bfj would go into command mode if there's no 'path' argument
@@ -106,14 +106,13 @@ input> 4
 | %      | copy, cell\[pointer\] = cell\[cell\[pointer\]\]                                                                                                                               | extension |
 
 
-## data
+## Data
 Data in bfj are all ubytes range from 0 to 255. 
 <br> while overflow:
 <br> ~> 255 + 1 = 0
 <br> ~> 0 - 1 = 255
 
 ## Memory
-
 Memory is an array of ubyte values with a minimum capacity of 1 and a maximum capacity of 256 (using short to represent ubyte).
 <br>Memory contains a memory pointer (from 0 to mem.length - 1).
 <br> while overflow:

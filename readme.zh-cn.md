@@ -105,14 +105,13 @@ input> 4
 | %      | 复制, cell\[pointer\] = cell\[cell\[pointer\]\]                                                               | 扩展 |
 
 
-## data
+## 数据
 bfj中的数据是0~255的无符号整数。输入/输出时自动转换为对应的char字符(使用ascii码表)。
 <br> 溢出处理规则:
 <br> ~> 255 + 1 = 0
 <br> ~> 0 - 1 = 255
 
-## Memory
-
+## 内存
 内存是一块容量最小为1，最大为256的ubyte数组(使用short来实现ubyte)。
 它有一个内存指针(从0到mem.length - 1)。
 <br> 溢出处理规则:
