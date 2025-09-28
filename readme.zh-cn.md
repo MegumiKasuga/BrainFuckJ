@@ -1,7 +1,7 @@
 # BrainFuckJ
 [![brain-fuck](https://img.shields.io/badge/brain-fuck-blue.svg)]()
-[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/MegumiKasuga/BrainFuckJ/tree/master/readme.md)
-[![zh-cn](https://img.shields.io/badge/lang-汉语-green.svg)](https://github.com/MegumiKasuga/BrainFuckJ/tree/master/readme.zh-cn.md)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/MegumiKasuga/BrainFuckJ/blob/master/readme.md)
+[![zh-cn](https://img.shields.io/badge/lang-汉语-green.svg)](https://github.com/MegumiKasuga/BrainFuckJ/blob/master/readme.zh-cn.md)
 
 ## 简介
 一个BrainFuck编程语言扩展集。
