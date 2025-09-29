@@ -87,8 +87,8 @@ input> 4
 |--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
 | +      | cell\[pointer\] += 1                                                                                                                                                          | original  |
 | -      | cell\[pointer\] -= 1                                                                                                                                                          | original  |
-| (      | cell\[pointer\] <<= 1                                                                                                                                                         | original  |
-| )      | cell\[pointer\] >>= 1                                                                                                                                                         | original  |
+| (      | cell\[pointer\] <<= 1                                                                                                                                                         | extension |
+| )      | cell\[pointer\] >>= 1                                                                                                                                                         | extension |
 | @      | cell\[pointer\] = 0                                                                                                                                                           | extension |
 | \<     | pointer -= 1                                                                                                                                                                  | original  |
 | \>     | pointer += 1                                                                                                                                                                  | original  |
