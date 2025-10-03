@@ -32,10 +32,12 @@ dependencies {
   implementation group: 'edu.carole', name: 'bfj', version: '${version}'
 }
 ```
-#### version
+#### Version
 ```
 - 1.01
 ```
+#### Details
+[- click here to visit repo kasuga-maven.](https://github.com/MegumiKasuga/kasuga-maven)
 
 ## How to use
 First, you'll need `java17` and the bfj jar. Then:

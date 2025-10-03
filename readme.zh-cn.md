@@ -37,6 +37,8 @@ dependencies {
 ```
 - 1.01
 ```
+#### 详情
+[- 点击这里访问 kasuga-maven](https://github.com/MegumiKasuga/kasuga-maven)
 
 ## 如何使用
 首先, 你要有 `java17` 以及一个bfj jar文件. 接着:
