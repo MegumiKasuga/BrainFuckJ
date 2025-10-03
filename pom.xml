@@ -4,15 +4,26 @@
 
   <groupId>edu.carole</groupId>
   <artifactId>BrainFuckJ</artifactId>
-  <version>1.0</version>
+  <version>1.01</version>
   <packaging>jar</packaging>
 
   <name>BrainFuckJ</name>
   <url>http://maven.apache.org</url>
 
   <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <github.global.server>github</github.global.server>
   </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>maven.repo</id>
+            <name>Local Staging Repository</name>
+            <url>file://${project.build.directory}/mvn-repo</url>
+        </repository>
+    </distributionManagement>
 
   <dependencies>
     <dependency>
@@ -85,9 +96,38 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>3.1.2</version>
+                <configuration>
+                    <altDeploymentRepository>
+                        internal.repo::default::file://${project.build.directory}/bfj
+                    </altDeploymentRepository>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.12</version>
+                <configuration>
+                    <message>Maven artifacts for ${project.version}</message>
+                    <noJekyll>true</noJekyll>
+                    <outputDirectory>${project.build.directory}/bfj</outputDirectory>
+                    <branch>refs/heads/bfj_${project.version}</branch>
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                    <repositoryName>kasuga-maven</repositoryName>
+                    <repositoryOwner>MegumiKasuga</repositoryOwner>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <!--suppress MybatisMapperXmlInspection -->
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -6,6 +6,38 @@
 ## 简介
 一个BrainFuck编程语言扩展集。
 
+## 依赖本项目
+#### Maven
+```xml
+<dependency>
+    <groupId>edu.carole</groupId>
+    <artifactId>bfj</artifactId>
+    <version>${version}</version>
+</dependency>
+
+<repository>
+<id>bfj</id>
+<url>https://raw.github.com/MegumiKasuga/kasuga-maven/bfj-${version}/</url>
+</repository>
+```
+#### Gradle
+``` groovy
+repositories {
+    maven {
+        url = "https://raw.github.com/MegumiKasuga/kasuga-maven/bfj/"
+    }
+}
+
+dependencies {
+  implementation group: 'edu.carole', name: 'bfj', version: '${version}'
+}
+```
+
+#### 版本
+```
+- 1.01
+```
+
 ## 如何使用
 首先, 你要有 `java17` 以及一个bfj jar文件. 接着:
 ### 使用Shell指令参数启动

@@ -6,6 +6,37 @@
 ## Intro
 An extended set of the BrainFuck programming language.
 
+## Implementation
+#### Maven
+```xml
+<dependency>
+    <groupId>edu.carole</groupId>
+    <artifactId>bfj</artifactId>
+    <version>${version}</version>
+</dependency>
+
+<repository>
+<id>bfj</id>
+<url>https://raw.github.com/MegumiKasuga/kasuga-maven/bfj-${version}/</url>
+</repository>
+```
+#### Gradle
+``` groovy
+repositories {
+    maven {
+        url = "https://raw.github.com/MegumiKasuga/kasuga-maven/bfj/"
+    }
+}
+
+dependencies {
+  implementation group: 'edu.carole', name: 'bfj', version: '${version}'
+}
+```
+#### version
+```
+- 1.01
+```
+
 ## How to use
 First, you'll need `java17` and the bfj jar. Then:
 ### Boot with shell arguments
