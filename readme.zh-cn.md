@@ -24,12 +24,12 @@
 ``` groovy
 repositories {
     maven {
-        url = "https://raw.github.com/MegumiKasuga/kasuga-maven/bfj/"
+        url = "https://raw.github.com/MegumiKasuga/kasuga-maven/BrainFuckJ/"
     }
 }
 
 dependencies {
-  implementation group: 'edu.carole', name: 'bfj', version: '${version}'
+  implementation group: 'edu.carole', name: 'BrainFuckJ', version: '${version}'
 }
 ```
 
