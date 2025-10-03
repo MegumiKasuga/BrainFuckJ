@@ -3,6 +3,7 @@ package edu.carole.operator.io;
 import edu.carole.util.IOMode;
 import edu.carole.env.Memory;
 import edu.carole.operator.Operator;
+import lombok.Getter;
 import lombok.NonNull;
 
 import java.io.InputStream;
@@ -12,8 +13,10 @@ import java.util.Scanner;
 
 public class InputOperator extends Operator {
 
+    @Getter
     private final InputStream inStream;
 
+    @Getter
     private final PrintStream outStream;
 
     private final IOMode mode;

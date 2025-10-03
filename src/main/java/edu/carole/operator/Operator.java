@@ -18,4 +18,9 @@ public abstract class Operator {
     public boolean is(char op) {
         return this.op == op;
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(op);
+    }
 }

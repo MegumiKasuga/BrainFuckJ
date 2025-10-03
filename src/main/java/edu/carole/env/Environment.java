@@ -1,5 +1,6 @@
 package edu.carole.env;
 
+import com.google.common.eventbus.EventBus;
 import edu.carole.compile.Compiler;
 import edu.carole.config.Config;
 import edu.carole.compile.Script;
@@ -34,20 +35,35 @@ public class Environment {
 
     private Script runningScript;
 
+    @Getter
+    private final ExceptionTracer tracer;
+
+    @Getter
+    private final EventBus eventBus;
+
     public Environment(short memorySize, short maxStackSize,
-                       Operators operators, Logger logger) {
+                       Operators operators, ExceptionTracer tracer, Logger logger,
+                       EventBus bus) {
         this.operators = operators;
-        memory = new Memory(memorySize, maxStackSize);
+        memory = new Memory(this, memorySize, maxStackSize);
         compiler = new Compiler(this);
         this.logger = logger;
+        this.tracer = tracer;
+        eventBus = bus;
     }
 
-    public Environment(ByteBuf buffer, @Nullable BiFunction<String, String, Reader> scriptProvider, Operators operators, Logger logger) {
+    public Environment(ByteBuf buffer,
+                       @Nullable BiFunction<String, String, Reader> scriptProvider,
+                       Operators operators, ExceptionTracer tracer, Logger logger,
+                       EventBus bus)
+            throws Exception {
         this.operators = operators;
         this.compiler = new Compiler(this);
         this.logger = logger;
+        this.tracer = tracer;
         Script script = null;
         boolean isRunning = buffer.readBoolean();
+        this.eventBus = bus;
         if (isRunning) {
             String rawName = readString(buffer);
             String rawPath = readString(buffer);
@@ -58,14 +74,18 @@ public class Environment {
                     script.setIndex(index);
                 } catch (IOException e) {
                     logger.error("Failed to load script '" + rawName + "' at path '" + rawPath + "'", e);
-                    script = new Script(rawName, rawPath, 8);
+                    script = new Script(rawName, rawPath, tracer, 8);
                 }
             }
         }
-        memory = Memory.readMemory(script, buffer);
+        memory = Memory.readMemory(this, script, buffer);
     }
 
-    public Script compile(String name, String path, Reader reader) throws IOException {
+    public void subscribeListener(Object listener) {
+        eventBus.register(listener);
+    }
+
+    public Script compile(String name, String path, Reader reader) throws Exception {
         while (!reader.ready()) {
             sleep(1);
         }
@@ -80,15 +100,15 @@ public class Environment {
         return compile(name, path, sb.toString());
     }
 
-    public Script compile(String filePath) throws IOException {
+    public Script compile(String filePath) throws Exception {
         return compile(new File(filePath));
     }
 
-    public void execute(String filePath) throws IOException {
+    public void execute(String filePath) throws Exception {
         execute(compile(filePath));
     }
 
-    public Script compile(File file) throws IOException {
+    public Script compile(File file) throws Exception {
         FileReader fr = new FileReader(file);
         StringBuilder sb = new StringBuilder();
         while (!fr.ready()) {
@@ -104,23 +124,23 @@ public class Environment {
         return compile(file.getName(), file.getPath(), s);
     }
 
-    public void execute(File file) throws IOException {
+    public void execute(File file) throws Exception {
         execute(compile(file));
     }
 
-    public Script compile(String source, String path, String input) {
+    public Script compile(String source, String path, String input) throws Exception {
         return compiler.compile(source, path, input);
     }
 
-    public void execute(String source, String path, String input) {
+    public void execute(String source, String path, String input) throws Exception {
         execute(compile(source, path, input));
     }
 
-    public void execute(Script script) {
+    public void execute(Script script) throws Exception {
         memory.clear();
         runningScript = script;
         memory.setScriptMarks(script.getScriptMarks());
-        script.execute(memory, logger);
+        script.execute(this, memory, logger);
         memory.clearStack();
         runningScript = null;
         memory.setScriptMarks(null);
@@ -147,27 +167,35 @@ public class Environment {
         runningScript = null;
     }
 
-    public static Environment createDefaultEnv(short memorySize, short maxStackSize,
-                                               InputStream inputStream, PrintStream printStream,
-                                               IOMode inputMode, IOMode outputMode, Logger logger) {
-        return new Environment(memorySize, maxStackSize,
-                Operators.getDefaultOperators(inputStream, printStream, inputMode, outputMode),
-                logger);
+    public static Environment createEnv(short memorySize, short maxStackSize,
+                                        Operators operators, ExceptionTracer tracer,
+                                        Logger logger, EventBus bus) {
+        return new Environment(memorySize, maxStackSize, operators, tracer, logger, bus);
     }
 
-    public static Environment createDefaultEnv(Config config, Logger logger) {
+    public static Environment createDefaultEnv(short memorySize, short maxStackSize,
+                                               InputStream inputStream, PrintStream printStream,
+                                               IOMode inputMode, IOMode outputMode, ExceptionTracer tracer,
+                                               Logger logger, EventBus bus) {
+        return new Environment(memorySize, maxStackSize,
+                Operators.getDefaultOperators(inputStream, printStream, inputMode, outputMode),
+                tracer, logger, bus);
+    }
+
+    public static Environment createDefaultEnv(Config config, ExceptionTracer tracer, Logger logger, EventBus bus) {
         return createDefaultEnv(config.memSize(), config.maxStackDepth(),
                 config.inStream(), config.outStream(),
-                config.inputMode(), config.outputMode(), logger);
+                config.inputMode(), config.outputMode(), tracer, logger, bus);
     }
 
     public static Environment createDefaultEnv(Config config, ByteBuf buffer,
                                                BiFunction<String, String, Reader> scriptProvider,
-                                               Logger logger) {
+                                               ExceptionTracer tracer, Logger logger, EventBus bus)
+            throws Exception {
         return new Environment(buffer, scriptProvider,
                 Operators.getDefaultOperators(config.inStream(), config.outStream(),
                         config.inputMode(), config.outputMode()),
-                logger);
+                tracer, logger, bus);
     }
 
     public static void writeString(ByteBuf buffer, String s) {
@@ -196,11 +224,15 @@ public class Environment {
         channel.close();
     }
 
-    public static Environment readFromFile(Config config, String path, Logger logger,
-                                           @Nullable BiFunction<String, String, Reader> scriptProvider) throws IOException {
+    public static Environment readFromFile(Config config, String path,
+                                           ExceptionTracer tracer,
+                                           Logger logger,
+                                           EventBus bus,
+                                           @Nullable BiFunction<String, String, Reader> scriptProvider)
+            throws Exception {
         ByteBuf buf = Unpooled.buffer();
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        FileChannel readChannel = FileChannel.open(Path.of("src/test/resources/test_freeze.bin"), StandardOpenOption.READ);
+        FileChannel readChannel = FileChannel.open(Path.of(path), StandardOpenOption.READ);
         int readResult;
         do {
             readResult = readChannel.read(buffer);
@@ -219,6 +251,6 @@ public class Environment {
                 logger.error("Failed to open file '" + b + "'", e);
                 return new StringReader("");
             }
-        }, logger);
+        }, tracer, logger, bus);
     }
 }

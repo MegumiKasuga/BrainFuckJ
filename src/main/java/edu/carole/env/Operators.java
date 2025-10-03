@@ -6,6 +6,7 @@ import edu.carole.operator.StackMark;
 import edu.carole.operator.io.InputOperator;
 import edu.carole.operator.io.OutputOperator;
 import edu.carole.util.IOMode;
+import lombok.Getter;
 
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -15,12 +16,43 @@ public class Operators {
 
     private final HashMap<Character, Operator> operators;
 
+    @Getter
+    private InputOperator input = null;
+
+    @Getter
+    private OutputOperator output = null;
+
     public Operators() {
         operators = new HashMap<>();
     }
 
     public void register(Operator operator) {
+        if (operator instanceof InputOperator in) {
+            if (this.input != null) {
+                throw new RuntimeException("input operator is already registered");
+            }
+            this.input = in;
+        } else if (operator instanceof OutputOperator out) {
+            if (this.output != null) {
+                throw new RuntimeException("output operator is already registered");
+            }
+            this.output = out;
+        }
         operators.put(operator.getOp(), operator);
+    }
+
+    public InputStream getInputStream() {
+        if (input == null) {
+            throw new RuntimeException("input operator is null");
+        }
+        return input.getInStream();
+    }
+
+    public PrintStream getPrintStream() {
+        if (output == null) {
+            throw new RuntimeException("output operator is null");
+        }
+        return output.getPrinter();
     }
 
     public Operator getOperator(char op) {

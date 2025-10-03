@@ -1,11 +1,20 @@
 package edu.carole;
 
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import edu.carole.env.ExceptionTracer;
 import edu.carole.compile.Script;
 import edu.carole.config.Config;
 import edu.carole.config.ConfigBuilder;
 import edu.carole.env.Environment;
+import edu.carole.event.Stage;
+import edu.carole.event.compile.CompileCharEvent;
+import edu.carole.event.compile.CompileParams;
+import edu.carole.exceptions.EnvNotFound;
 import edu.carole.util.Couple;
 import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import org.apache.log4j.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,6 +22,7 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 
 public class BrainFuckJ {
@@ -53,8 +63,11 @@ public class BrainFuckJ {
             e.printStackTrace();
             return;
         }
-        BrainFuckJ bfj = new BrainFuckJ(config, logger);
+        ExceptionTracer tracer = new ExceptionTracer();
+        // BrainFuckJ bfj = new BrainFuckJ(config, tracer, logger, () -> new AsyncEventBus(Executors.newCachedThreadPool()));
+        BrainFuckJ bfj = new BrainFuckJ(config, tracer, logger, EventBus::new);
         UUID id = bfj.create();
+        // bfj.addEventListener(id, bfj);
         config.log(logger);
         PrintStream outputStream = config.outStream();
         InputStream inputStream = config.inStream();
@@ -128,61 +141,75 @@ public class BrainFuckJ {
 
     private final Config defaultConfig;
 
-    public BrainFuckJ(Config defaultConfig, Logger logger) {
+    private final ExceptionTracer tracer;
+    private final Supplier<EventBus> busSupplier;
+
+    public BrainFuckJ(@NonNull Config defaultConfig,
+                      @NonNull ExceptionTracer defaultTracer,
+                      @NonNull Logger logger,
+                      @NonNull Supplier<EventBus> eventBusSupplier) {
         this.logger = logger;
         this.defaultConfig = defaultConfig;
         this.environments = new HashMap<>();
+        this.tracer = defaultTracer;
+        this.busSupplier = eventBusSupplier;
     }
 
-    public UUID put(Environment environment) {
+    public UUID put(@NonNull Environment environment) {
         UUID uuid = createUUID();
         environments.put(uuid, environment);
         return uuid;
     }
 
-    public UUID create(Config config) {
+    public UUID create(@Nullable Config config,
+                       @Nullable ExceptionTracer tracer,
+                       @Nullable Logger logger,
+                       @Nullable EventBus bus) {
         UUID uuid = createUUID();
-        environments.put(uuid, Environment.createDefaultEnv(config, logger));
+        config = config == null ? this.defaultConfig : config;
+        tracer = tracer == null ? this.tracer : tracer;
+        logger = logger == null ? this.logger : logger;
+        bus = bus == null ? this.busSupplier.get() : bus;
+        environments.put(uuid, Environment.createDefaultEnv(config, tracer, logger, bus));
         return uuid;
     }
 
-    public UUID create(Config config, ByteBuf buffer,
-                                BiFunction<String, String, Reader> scriptProvider) {
+    public UUID create(@NonNull ByteBuf buffer,
+                       @Nullable Config config,
+                       @Nullable ExceptionTracer tracer,
+                       @Nullable BiFunction<String, String, Reader> scriptProvider,
+                       @Nullable Logger logger,
+                       @Nullable EventBus bus) throws Exception {
         UUID uuid = createUUID();
-        environments.put(uuid, Environment.createDefaultEnv(config, buffer, scriptProvider, logger));
+        config = config == null ? this.defaultConfig : config;
+        tracer = tracer == null ? this.tracer : tracer;
+        logger = logger == null ? this.logger : logger;
+        bus = bus == null ? busSupplier.get() : bus;
+        environments.put(uuid, Environment.createDefaultEnv(config, buffer, scriptProvider, tracer, logger, bus));
         return uuid;
-    }
-
-    public UUID create(ByteBuf buffer,
-                                  BiFunction<String, String, Reader> scriptProvider) {
-        return create(defaultConfig, buffer, scriptProvider);
     }
 
     public UUID create() {
+        return create(null, null, null, null);
+    }
+
+    public UUID createFromFile(@NonNull String path,
+                               @Nullable Config config,
+                               @Nullable ExceptionTracer tracer,
+                               @Nullable BiFunction<String, String, Reader> scriptProvider,
+                               @Nullable Logger logger,
+                               @Nullable EventBus bus) throws Exception {
         UUID uuid = createUUID();
-        environments.put(uuid, Environment.createDefaultEnv(defaultConfig, logger));
+        config = config == null ? this.defaultConfig : config;
+        tracer = tracer == null ? this.tracer : tracer;
+        logger = logger == null ? this.logger : logger;
+        bus = bus == null ? busSupplier.get() : bus;
+        environments.put(uuid, Environment.readFromFile(config, path, tracer, logger, bus, scriptProvider));
         return uuid;
     }
 
-    public UUID createFromFile(Config config, String filePath,
-                               @Nullable BiFunction<String, String, Reader> scriptProvider) throws IOException {
-        UUID uuid = createUUID();
-        environments.put(uuid, Environment.readFromFile(config, filePath, logger, scriptProvider));
-        return uuid;
-    }
-
-    public UUID createFromFile(Config config, String filePath) throws IOException {
-        return createFromFile(config, filePath, null);
-    }
-
-    public UUID createFromFile(String filePath, @Nullable BiFunction<String, String, Reader> scriptProvider) throws IOException {
-        UUID uuid = createUUID();
-        environments.put(uuid, Environment.readFromFile(defaultConfig, filePath, logger, scriptProvider));
-        return uuid;
-    }
-
-    public UUID createFromFile(String filePath) throws IOException {
-        return createFromFile(filePath, null);
+    public UUID createFromFile(@NonNull String filePath) throws Exception {
+        return createFromFile(filePath, null, null, null, null, null);
     }
 
     public Environment delete(UUID uuid) {
@@ -193,9 +220,10 @@ public class BrainFuckJ {
 
     public void save(UUID id, ByteBuf buf) {
         if (!contains(id)) {
-            logger.error("Failed to save environment '" + id +
-                    "'. cause: environment does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to save environment '" + id + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
@@ -204,9 +232,10 @@ public class BrainFuckJ {
 
     public void saveToFile(UUID id, String filePath) throws IOException {
         if (!contains(id)) {
-            logger.error("Failed to save environment '" + id +
-                    "'. cause: environment does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to save environment '" + id + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
@@ -214,44 +243,48 @@ public class BrainFuckJ {
     }
 
     public Script compile(UUID id, String scriptName,
-                          String scriptPath, String script) {
+                          String scriptPath, String script) throws Exception {
         if (!contains(id)) {
-            logger.error("Failed to compile script '" + scriptName +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return null;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to compile script '" + scriptName + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
         return environment.compile(scriptName, scriptPath, script);
     }
 
-    public Script compile(UUID id, File file) throws IOException {
+    public Script compile(UUID id, File file) throws Exception {
         if (!contains(id)) {
-            logger.error("Failed to compile script '" + file.getName() +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return null;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to compile script '" + file.getName() + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
         return environment.compile(file);
     }
 
-    public Script compile(UUID id, String filePath) throws IOException {
+    public Script compile(UUID id, String filePath) throws Exception {
         if (!contains(id)) {
-            logger.warn("Failed to compile script '" + filePath +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return null;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to compile script '" + filePath + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
         return environment.compile(filePath);
     }
 
-    public void execute(UUID id, String scriptName, String scriptPath, String script) {
+    public void execute(UUID id, String scriptName, String scriptPath, String script) throws Exception {
         if (!contains(id)) {
-            logger.warn("Failed to execute script '" + scriptName +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to execute script '" + scriptName + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
@@ -259,11 +292,12 @@ public class BrainFuckJ {
     }
 
 
-    public void execute(UUID id, File file) throws IOException {
+    public void execute(UUID id, File file) throws Exception {
         if (!contains(id)) {
-            logger.warn("Failed to execute script '" + file.getName() +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to execute script '" + file.getName() + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
@@ -271,26 +305,40 @@ public class BrainFuckJ {
     }
 
 
-    public void execute(UUID id, String filePath) throws IOException {
+    public void execute(UUID id, String filePath) throws Exception {
         if (!contains(id)) {
-            logger.warn("Failed to execute script '" + filePath +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to execute script '" + filePath + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
         environment.execute(filePath);
     }
 
-    public void execute(UUID id, Script script) {
+    public void execute(UUID id, Script script) throws Exception {
         if (!contains(id)) {
-            logger.warn("Failed to execute script '" + script.getScriptName() +
-                    "'. cause: environment '" + id + "' does not exist.");
-            return;
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to execute script '" + script.getScriptName() + "'");
+            exception.log(logger);
+            throw exception;
         }
         Environment environment = get(id);
         Objects.requireNonNull(environment);
         environment.execute(script);
+    }
+
+    public void addEventListener(UUID id, Object listener) {
+        if (!contains(id)) {
+            EnvNotFound exception = new EnvNotFound(id,
+                    "Failed to add event listener for env '" + id + "'");
+            exception.log(logger);
+            throw exception;
+        }
+        Environment environment = get(id);
+        Objects.requireNonNull(environment);
+        environment.subscribeListener(listener);
     }
 
     public boolean contains(UUID uuid) {
