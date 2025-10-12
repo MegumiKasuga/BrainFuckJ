@@ -6,6 +6,9 @@
 ## Intro
 An extended set of the BrainFuck programming language.
 
+##### Other repos you may be interested in:
+See [BrainFuckCpp](https://github.com/littlefish12345/BrainFuckCPP) and [BrainFuckCompiler](https://github.com/littlefish12345/BrainFuckCompiler) here.
+
 ## Implementation
 #### Maven
 ```xml
