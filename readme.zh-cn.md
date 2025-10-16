@@ -37,7 +37,7 @@ dependencies {
 
 #### 版本
 ```
-- 1.01
+- 1.02
 ```
 #### 详情
 [- 点击这里访问 kasuga-maven](https://github.com/MegumiKasuga/kasuga-maven)

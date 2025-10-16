@@ -37,7 +37,7 @@ dependencies {
 ```
 #### Version
 ```
-- 1.01
+- 1.02
 ```
 #### Details
 [- click here to visit repo kasuga-maven.](https://github.com/MegumiKasuga/kasuga-maven)
