@@ -274,7 +274,9 @@ public class Memory {
     }
 
     public void waitIfSaving() {
-        Environment.sleep(1);
+        while (saving) {
+            Environment.sleep(1);
+        }
     }
 
     public void post(Object event) {

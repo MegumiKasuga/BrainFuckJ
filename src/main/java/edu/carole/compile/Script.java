@@ -94,6 +94,7 @@ public class Script {
 
     public void execute(Environment environment, Memory memory, Logger logger) throws Exception {
         logger.info(String.format("Executing script \"%s\"", scriptName));
+        long milliSec = System.currentTimeMillis();
         EventBus bus = environment.getEventBus();
         try {
             bus.post(new ScriptExecutionEvent(environment, memory,
@@ -134,7 +135,7 @@ public class Script {
         } finally {
             bus.post(new ScriptExecutionEvent(environment, memory,
                     this, Stage.POST));
-            logger.info(String.format("Finished executing script \"%s\"", scriptName));
+            logger.info(String.format("Finished executing script \"%s\" in %d milliseconds", scriptName, System.currentTimeMillis() - milliSec));
         }
     }
 

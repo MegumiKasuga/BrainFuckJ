@@ -25,8 +25,8 @@ public class OutputOperator extends Operator {
     @Override
     public int execute(int index, @NonNull Memory memory) {
         switch (mode) {
-            case CHAR -> printer.println((char) memory.getData());
-            case NUMBER ->  printer.println(memory.getData());
+            case CHAR -> printer.print((char) memory.getData());
+            case NUMBER ->  printer.print(memory.getData());
         }
         return index + 1;
     }
