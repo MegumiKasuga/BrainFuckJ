@@ -5,6 +5,8 @@
 
 ## 简介
 一个BrainFuck编程语言扩展集。
+##### 你可能感兴趣的其他仓库: 
+点击链接访问 [BrainFuckCpp](https://github.com/littlefish12345/BrainFuckCPP) 和 [BrainFuckCompiler](https://github.com/littlefish12345/BrainFuckCompiler) 
 
 ## 依赖本项目
 #### Maven
